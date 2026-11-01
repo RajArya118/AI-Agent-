@@ -230,3 +230,5 @@ BuildPilot AI is fully configured for zero-friction cloud deployment:
 - **Database**: [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) (M0 Free Tier or Dedicated Cluster)
 
 For complete, step-by-step instructions on setting up GitHub, Atlas, Render, Vercel, custom domains, and environment variables, see [**`docs/DEPLOYMENT.md`**](file:///docs/DEPLOYMENT.md).
+
+For a detailed breakdown of the 7-agent mesh, ReAct engine, security defenses, and complete directory catalog, see [**`docs/ARCHITECTURE.md`**](file:///docs/ARCHITECTURE.md).
