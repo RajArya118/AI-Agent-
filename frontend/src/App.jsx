@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import Sidebar from './components/Sidebar';
 import ChatArea from './components/ChatArea';
 import FileUploadModal from './components/FileUploadModal';
@@ -56,10 +55,10 @@ export default function App() {
 
   const loadProjects = async () => {
     try {
-      const res = await axios.get('/api/projects');
-      setProjects(res.data);
-      if (res.data.length > 0 && !activeProject) {
-        selectProject(res.data[0].id);
+      const data = await api.getProjects();
+      setProjects(data);
+      if (data.length > 0 && !activeProject) {
+        selectProject(data[0].id);
       }
     } catch (err) {
       console.error('Error fetching projects:', err);
@@ -68,8 +67,8 @@ export default function App() {
 
   const selectProject = async (id) => {
     try {
-      const res = await axios.get(`/api/projects/${id}`);
-      setActiveProject(res.data);
+      const data = await api.getProject(id);
+      setActiveProject(data);
     } catch (err) {
       console.error('Error loading project:', err);
     }
@@ -78,9 +77,9 @@ export default function App() {
   const handleGenerateProject = async (prompt, title) => {
     setGenerating(true);
     try {
-      const res = await axios.post('/api/projects', { prompt, title });
-      setProjects(prev => [res.data, ...prev]);
-      setActiveProject(res.data);
+      const data = await api.createProject(prompt, title);
+      setProjects(prev => [data, ...prev]);
+      setActiveProject(data);
       setCreatorModalOpen(false);
       setActiveTab('studio');
     } catch (err) {
@@ -92,7 +91,7 @@ export default function App() {
 
   const handleExportZip = () => {
     if (!activeProject) return;
-    window.location.href = `/api/projects/${activeProject.id}/export`;
+    window.location.href = api.getExportUrl(activeProject.id);
   };
 
   // Chat operations

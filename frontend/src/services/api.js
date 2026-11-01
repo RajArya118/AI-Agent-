@@ -1,23 +1,73 @@
 import axios from 'axios';
 
-// When running Vite dev server, proxy handles /api to http://localhost:8000
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+// When running Vite dev server or serving from FastAPI, proxy or relative path handles /api
+// When deployed on Vercel with Render backend, VITE_API_BASE_URL points to https://<render-service>.onrender.com/api
+const rawBase = (import.meta.env.VITE_API_BASE_URL || '').trim();
 
-const client = axios.create({
+let normalizedBase = '/api';
+if (rawBase) {
+  // Strip trailing slashes
+  const clean = rawBase.replace(/\/+$/, '');
+  // If user passed root domain e.g. https://api.render.com, ensure /api is present
+  normalizedBase = clean.endsWith('/api') ? clean : `${clean}/api`;
+}
+
+export const API_BASE_URL = normalizedBase;
+
+export const client = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 30000,
 });
 
 export const api = {
+  // Base URLs
+  getBaseUrl: () => API_BASE_URL,
+
+  getPreviewUrl: (projectId) => {
+    if (API_BASE_URL.startsWith('http://') || API_BASE_URL.startsWith('https://')) {
+      return `${API_BASE_URL}/projects/${projectId}/preview`;
+    }
+    return `/api/projects/${projectId}/preview`;
+  },
+
+  getExportUrl: (projectId) => {
+    if (API_BASE_URL.startsWith('http://') || API_BASE_URL.startsWith('https://')) {
+      return `${API_BASE_URL}/projects/${projectId}/export`;
+    }
+    return `/api/projects/${projectId}/export`;
+  },
+
   // Health
   checkHealth: async () => {
     const res = await client.get('/health');
     return res.data;
   },
 
-  // Conversations
+  // BuildPilot Projects (Multi-Agent Platform)
+  getProjects: async () => {
+    const res = await client.get('/projects');
+    return res.data;
+  },
+
+  getProject: async (id) => {
+    const res = await client.get(`/projects/${id}`);
+    return res.data;
+  },
+
+  createProject: async (prompt, title) => {
+    const res = await client.post('/projects', { prompt, title });
+    return res.data;
+  },
+
+  getProjectFile: async (projectId, filePath) => {
+    const res = await client.get(`/projects/${projectId}/files/${filePath}`);
+    return res.data;
+  },
+
+  // Conversations (AI Assistant)
   getConversations: async () => {
     const res = await client.get('/conversations');
     return res.data;

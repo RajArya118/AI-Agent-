@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FileCode, FileText, X, Copy, Check } from 'lucide-react';
-import axios from 'axios';
+import { api } from '../services/api';
 
 export default function FileTreeViewer({ isOpen, onClose, projectId, fileTree = [] }) {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -18,8 +18,8 @@ export default function FileTreeViewer({ isOpen, onClose, projectId, fileTree = 
     setSelectedFile(filePath);
     setLoading(true);
     try {
-      const res = await axios.get(`/api/projects/${projectId}/files/${filePath}`);
-      setContent(res.data.content);
+      const data = await api.getProjectFile(projectId, filePath);
+      setContent(data.content);
     } catch (err) {
       setContent(`// Failed loading file: ${err.message}`);
     } finally {

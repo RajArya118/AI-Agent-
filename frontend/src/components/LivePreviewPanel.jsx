@@ -9,12 +9,13 @@ import {
   Download,
   Code2
 } from 'lucide-react';
+import { api } from '../services/api';
 
 export default function LivePreviewPanel({ projectId, projectTitle, onExportZip, onToggleCode }) {
   const [viewport, setViewport] = useState('100%');
   const [key, setKey] = useState(0);
 
-  const previewUrl = `/api/projects/${projectId}/preview`;
+  const previewUrl = api.getPreviewUrl(projectId);
 
   const reloadIframe = () => {
     setKey(prev => prev + 1);

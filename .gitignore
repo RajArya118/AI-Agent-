@@ -13,12 +13,16 @@ env/
 *.db
 uploads/
 backend/uploads/
+mongodb_fallback.json
+backend/mongodb_fallback.json
+backend/sandboxes/
+backend/generated_projects/
+generated_projects/
 
 # Node / Frontend
 node_modules/
 frontend/node_modules/
 dist/
-frontend/dist/
 dist-ssr/
 *.local
 
@@ -29,6 +33,7 @@ frontend/.env
 *.env.*
 !.env.example
 !backend/.env.example
+!frontend/.env.example
 
 # Logs and OS files
 *.log
@@ -39,3 +44,4 @@ yarn-error.log*
 Thumbs.db
 .vscode/
 .idea/
+.pytest_cache/

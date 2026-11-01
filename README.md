@@ -219,3 +219,14 @@ tests/test_buildpilot.py::test_api_project_lifecycle PASSED              [100%]
 | `POST /api/conversations/{id}/messages` | `POST` | Chat turn with tool calling (Calculator, Search, Docs) |
 | `POST /api/documents/upload` | `POST` | Upload and sanitize PDF/TXT documents (max 10MB) |
 | `GET /docs` | `GET` | Interactive Swagger API documentation |
+
+---
+
+## 🚀 Cloud Production Deployment
+
+BuildPilot AI is fully configured for zero-friction cloud deployment:
+- **Frontend Hosting**: [Vercel](https://vercel.com/) (configured via `frontend/vercel.json`)
+- **Backend Hosting**: [Render](https://render.com/) (configured via `render.yaml`)
+- **Database**: [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) (M0 Free Tier or Dedicated Cluster)
+
+For complete, step-by-step instructions on setting up GitHub, Atlas, Render, Vercel, custom domains, and environment variables, see [**`docs/DEPLOYMENT.md`**](file:///docs/DEPLOYMENT.md).

@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173"
     DATABASE_URL: str = f"sqlite:///{BASE_DIR / 'ai_assistant.db'}"
     MONGODB_URL: str = "mongodb://localhost:27017/buildpilot"
+    MONGODB_URI: str = ""
     MAX_UPLOAD_SIZE_MB: int = 10
     UPLOAD_DIRECTORY: str = str(UPLOAD_DIR)
 
@@ -33,5 +34,25 @@ class Settings(BaseSettings):
     def is_gemini_configured(self) -> bool:
         key = self.GEMINI_API_KEY.strip()
         return bool(key and key != "your_gemini_api_key_here" and len(key) > 5)
+
+    @property
+    def effective_mongodb_uri(self) -> str:
+        # Atlas connection strings typically use MONGODB_URI or MONGODB_URL
+        uri = os.getenv("MONGODB_URI") or self.MONGODB_URI or os.getenv("MONGODB_URL") or self.MONGODB_URL
+        return uri.strip()
+
+    @property
+    def effective_port(self) -> int:
+        port_env = os.getenv("PORT")
+        if port_env:
+            try:
+                return int(port_env)
+            except ValueError:
+                pass
+        return self.PORT
+
+    @property
+    def effective_host(self) -> str:
+        return os.getenv("HOST", self.HOST)
 
 settings = Settings()

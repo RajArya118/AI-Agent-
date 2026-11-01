@@ -9,31 +9,78 @@ logger = logging.getLogger("buildpilot.db")
 
 class MongoDocumentStore:
     """
-    Asynchronous document repository supporting both live MongoDB connections
-    and resilient local document persistence fallback when MongoDB daemon is offline.
+    MongoDB Document Repository supporting:
+    1. Production MongoDB Atlas clusters (via mongodb+srv:// or mongodb:// connection string).
+    2. Automatic indexing for high-performance sorting and query retrieval.
+    3. Resilient local document persistence fallback when running offline or without credentials.
     """
     def __init__(self):
         self.client = None
         self.db = None
         self.is_connected = False
+        self.connection_target = "Fallback (Local)"
         self.fallback_file = BASE_DIR / "mongodb_fallback.json"
         self._init_connection()
 
     def _init_connection(self):
-        mongodb_url = os.getenv("MONGODB_URL", "mongodb://localhost:27017/buildpilot")
+        mongodb_url = settings.effective_mongodb_uri
+        if not mongodb_url:
+            mongodb_url = "mongodb://localhost:27017/buildpilot"
+
         try:
             from pymongo import MongoClient
-            self.client = MongoClient(mongodb_url, serverSelectionTimeoutMS=1500)
+            # Set timeout to prevent hanging on cold starts
+            self.client = MongoClient(mongodb_url, serverSelectionTimeoutMS=2500)
             self.client.admin.command('ping')
-            self.db = self.client.get_database("buildpilot")
+            
+            # Extract database name if specified in URI, otherwise default to 'buildpilot'
+            default_db_name = "buildpilot"
+            try:
+                # get_default_database() uses db from the connection string if present
+                self.db = self.client.get_default_database()
+            except Exception:
+                self.db = self.client.get_database(default_db_name)
+
+            if self.db is None:
+                self.db = self.client.get_database(default_db_name)
+
+            # Ensure production indexes
+            self._init_indexes()
+
             self.is_connected = True
-            logger.info("Connected to live MongoDB instance successfully.")
+            masked_url = self._mask_credentials(mongodb_url)
+            self.connection_target = f"MongoDB ({masked_url})"
+            logger.info(f"Connected to MongoDB successfully: {self.connection_target}")
         except Exception as e:
-            logger.info(f"Live MongoDB not available ({e}). Using resilient document repository fallback.")
+            logger.info(f"MongoDB not connected ({e}). Using resilient document repository fallback.")
             self.is_connected = False
+            self.connection_target = "Local Resilient Fallback (mongodb_fallback.json)"
             if not self.fallback_file.exists():
                 with open(self.fallback_file, "w", encoding="utf-8") as f:
                     json.dump([], f)
+
+    def _init_indexes(self):
+        """Creates required MongoDB collection indexes for production performance."""
+        try:
+            if self.db is not None:
+                self.db.projects.create_index([("created_at", -1)], background=True)
+                self.db.projects.create_index([("status", 1)], background=True)
+                self.db.projects.create_index([("archetype", 1)], background=True)
+                logger.info("MongoDB production indexes verified for 'projects' collection.")
+        except Exception as e:
+            logger.warning(f"Could not initialize MongoDB indexes: {e}")
+
+    def _mask_credentials(self, uri: str) -> str:
+        """Safely mask password in logs/diagnostics."""
+        try:
+            if "@" in uri and "://" in uri:
+                scheme_part, rest = uri.split("://", 1)
+                auth_part, host_part = rest.split("@", 1)
+                user = auth_part.split(":")[0] if ":" in auth_part else auth_part
+                return f"{scheme_part}://{user}:****@{host_part}"
+        except Exception:
+            pass
+        return "mongodb://[configured]"
 
     def _read_fallback(self) -> List[Dict[str, Any]]:
         try:
